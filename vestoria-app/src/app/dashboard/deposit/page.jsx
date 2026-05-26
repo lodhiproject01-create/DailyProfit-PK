@@ -287,7 +287,11 @@ export default function Deposit() {
                   : "bg-gray-900 text-gray-400 border-gray-700 hover:bg-gray-700"
               }`}
             >
-              <span className="text-3xl">{m.logo || "📱"}</span>
+              {m.logo?.startsWith('http') ? (
+                <img src={m.logo} alt={m.name} className="w-8 h-8 rounded-lg object-cover" />
+              ) : (
+                <span className="text-3xl">{m.logo || "📱"}</span>
+              )}
               <span className="font-bold">{m.name}</span>
             </button>
           ))}

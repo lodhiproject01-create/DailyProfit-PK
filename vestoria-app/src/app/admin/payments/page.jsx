@@ -7,8 +7,9 @@ import {
 } from "firebase/firestore";
 import {
   Plus, Edit, Trash2, CheckCircle2, XCircle, Sliders, AlertTriangle, ShieldAlert,
-  ArrowDownToLine, ArrowUpRight, Check, LayoutDashboard, Landmark, Coins, HelpCircle, Save, Info, RefreshCw, CreditCard
+  ArrowDownToLine, ArrowUpRight, Check, LayoutDashboard, Landmark, Coins, HelpCircle, Save, Info, RefreshCw, CreditCard, Upload, Image as ImageIcon
 } from "lucide-react";
+import { ImageUploader } from "@/components/CloudinaryUploader";
 
 export default function PaymentSettings() {
   const [activeTab, setActiveTab] = useState("gateways"); // gateways | withdrawals | fraud_logs | analytics
@@ -30,6 +31,7 @@ export default function PaymentSettings() {
   const [formMaxDep, setFormMaxDep] = useState(50000);
   const [formInstructions, setFormInstructions] = useState("");
   const [formStatus, setFormStatus] = useState(true);
+  const [logoCloudinaryData, setLogoCloudinaryData] = useState(null);
 
   // Withdrawal rules state
   const [minW, setMinW] = useState(500);
@@ -159,6 +161,7 @@ export default function PaymentSettings() {
     setFormMaxDep(50000);
     setFormInstructions("");
     setFormStatus(true);
+    setLogoCloudinaryData(null);
     setIsFormOpen(true);
   };
 
@@ -174,6 +177,7 @@ export default function PaymentSettings() {
     setFormMaxDep(method.maxDeposit || 50000);
     setFormInstructions(method.instructions || "");
     setFormStatus(method.status !== false);
+    setLogoCloudinaryData(method.logo?.startsWith('http') ? { image_url: method.logo } : null);
     setIsFormOpen(true);
   };
 
@@ -183,9 +187,13 @@ export default function PaymentSettings() {
     
     setLoading(true);
     try {
+      // Use uploaded Cloudinary image URL if available, otherwise keep emoji/text
+      const logoValue = logoCloudinaryData?.image_url || formLogo;
+
       const data = {
         name: formName,
-        logo: formLogo,
+        logo: logoValue,
+        logoPublicId: logoCloudinaryData?.public_id || "",
         title: formTitle,
         number: formNumber,
         iban: formIban,
@@ -339,8 +347,12 @@ export default function PaymentSettings() {
                     <div className="p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${colors} flex items-center justify-center text-2xl font-bold`}>
-                            {m.logo || "📱"}
+                          <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${colors} flex items-center justify-center text-2xl font-bold overflow-hidden`}>
+                            {m.logo?.startsWith('http') ? (
+                              <img src={m.logo} alt={m.name} className="w-full h-full object-cover rounded-2xl" />
+                            ) : (
+                              m.logo || "📱"
+                            )}
                           </div>
                           <div>
                             <h4 className="font-extrabold text-white text-lg">{m.name}</h4>
@@ -702,14 +714,44 @@ export default function PaymentSettings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Visual Logo/Emoji</label>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Fallback Emoji</label>
                   <input
                     type="text"
                     value={formLogo}
                     onChange={(e) => setFormLogo(e.target.value)}
+                    placeholder="e.g. 📱 (used if no icon uploaded)"
                     className="w-full bg-gray-950 border border-gray-700 rounded-xl p-3.5 text-white focus:outline-none focus:border-green-500 transition"
                   />
                 </div>
+              </div>
+
+              {/* Gateway Icon Upload */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase">Gateway Icon Image (Upload)</label>
+                {logoCloudinaryData?.image_url ? (
+                  <div className="flex items-center gap-4 bg-gray-950 border border-gray-700 rounded-xl p-3">
+                    <img src={logoCloudinaryData.image_url} alt="Gateway icon" className="w-14 h-14 rounded-xl object-cover border border-gray-600" />
+                    <div className="flex-1">
+                      <p className="text-xs text-green-400 font-semibold">✅ Icon uploaded successfully</p>
+                      <p className="text-[10px] text-gray-500 font-mono truncate mt-0.5">{logoCloudinaryData.image_url.slice(0, 50)}...</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLogoCloudinaryData(null)}
+                      className="text-red-400 hover:text-red-300 text-xs font-bold bg-red-500/10 px-3 py-1.5 rounded-lg transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <ImageUploader
+                    imageType="gateway_icons"
+                    userId="admin"
+                    onUploadSuccess={(data) => setLogoCloudinaryData(data)}
+                    label="Payment Gateway Icon"
+                  />
+                )}
+                <p className="text-[10px] text-gray-500 mt-1.5">Upload a brand logo (JazzCash, EasyPaisa, etc). If no image is uploaded, the emoji fallback above will be used.</p>
               </div>
 
               <div>

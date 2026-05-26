@@ -223,7 +223,11 @@ export default function Withdraw() {
                       : "bg-gray-900 text-gray-400 border-gray-700 hover:bg-gray-700"
                   }`}
                 >
-                  <span className="text-2xl">{m.logo || "🏦"}</span>
+                  {m.logo?.startsWith('http') ? (
+                    <img src={m.logo} alt={m.name} className="w-7 h-7 rounded-lg object-cover" />
+                  ) : (
+                    <span className="text-2xl">{m.logo || "🏦"}</span>
+                  )}
                   {m.name}
                 </button>
               ))}
