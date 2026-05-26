@@ -3,7 +3,7 @@
 	"appName": "DailyProfit PK",
 	"webDir": "out",
 	"server": {
-		"url": "https://dailyprofitpk.vercel.app",
+		"url": "https://dailyprofit-pk.vercel.app",
 		"cleartext": true
 	}
 }

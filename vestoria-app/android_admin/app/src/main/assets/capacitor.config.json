@@ -3,7 +3,7 @@
   "appName": "DailyProfit Admin",
   "webDir": "out",
   "server": {
-    "url": "https://dailyprofitpk.vercel.app/admin-login",
+    "url": "https://dailyprofit-pk.vercel.app/admin-login",
     "cleartext": true
   }
 }

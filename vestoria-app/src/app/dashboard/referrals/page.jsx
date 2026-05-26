@@ -20,7 +20,7 @@ export default function Referrals() {
     fetchReferrals();
   }, [userData]);
 
-  const referralLink = `https://dailyprofitpk.vercel.app/signup?ref=${userData?.id}`;
+  const referralLink = `https://dailyprofit-pk.vercel.app/signup?ref=${userData?.id}`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);

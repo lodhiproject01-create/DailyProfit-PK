@@ -32,7 +32,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 public class MainActivity extends BridgeActivity {
     private ProgressBar progressBar;
     private boolean isInterfaceSetup = false;
-    private final String baseUrl = "https://dailyprofitpk.vercel.app/admin";
+    private final String baseUrl = "https://dailyprofit-pk.vercel.app/admin";
     private String customUA;
     private FirebaseFirestore db;
     private ListenerRegistration withdrawalListener;
