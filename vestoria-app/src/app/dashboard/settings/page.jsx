@@ -33,6 +33,13 @@ export default function Settings() {
     });
   }, []);
 
+  useEffect(() => {
+    if (userData) {
+      setName(userData.name || "");
+      setPhone(userData.phone || "");
+    }
+  }, [userData]);
+
   const showMsg = (type, text) => {
     setMsg({ type, text });
     setTimeout(() => setMsg(null), 4000);

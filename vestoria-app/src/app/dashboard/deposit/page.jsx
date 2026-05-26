@@ -407,7 +407,7 @@ export default function Deposit() {
             <div>
               <ScreenshotUploadCard 
                 onUploadSuccess={setCloudinaryData} 
-                userId={userData.id} 
+                userId={userData?.id} 
                 defaultMethod={selectedMethod.name} 
               />
             </div>
