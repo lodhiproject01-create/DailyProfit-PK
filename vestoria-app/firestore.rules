@@ -27,13 +27,17 @@ service cloud.firestore {
                         'email' in request.resource.data &&
                         request.resource.data.email.lower() in ["umarlodhi2020@gmail.com", "umarhayat@gmail.com", "admin@dailyprofit.pk"]
                         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["balance", "profit", "referralEarnings"])
-                      )
-                    );
+                     );
+      
+      // Nested user notifications
+      match /notifications/{notifId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // ── DEPOSITS ───────────────────────────────────────────────────────────────
     match /deposits/{depositId} {
-      allow read:   if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read:   if request.auth != null; // Relaxed for global transaction duplication verification
       allow create: if request.auth != null
                     && request.resource.data.userId == request.auth.uid
                     && request.resource.data.amount > 0;
@@ -81,6 +85,20 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read:  if request.auth != null && resource.data.userId == request.auth.uid;
       allow write: if false;
+    }
+
+    // ── PAYMENT METHODS ────────────────────────────────────────────────────────
+    match /payment_methods/{methodId} {
+      allow read: if true; // Public reading for billing details
+      allow write: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'manager'];
+    }
+
+    // ── FRAUD LOGS ─────────────────────────────────────────────────────────────
+    match /fraud_logs/{logId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'manager'];
     }
   }
 }
