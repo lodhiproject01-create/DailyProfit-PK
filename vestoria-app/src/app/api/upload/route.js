@@ -3,9 +3,9 @@ import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary using secure server-side environment variables
 cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || "dailyprofitpk",
-  api_key: process.env.CLOUDINARY_API_KEY || "892976939987823",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "mNURp-a7R9hL8PqO-TzK7rU4eWs",
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || "dtuay731d",
+  api_key: process.env.CLOUDINARY_API_KEY || "787196326347847",
+  api_secret: process.env.CLOUDINARY_API_SECRET || "xPU6uh3swJZ2xfUKsBbD_Uy2vow",
   secure: true
 });
 
