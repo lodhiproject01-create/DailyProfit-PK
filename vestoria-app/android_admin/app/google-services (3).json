@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "471340210455",
+    "firebase_url": "https://dailyprofitpk-01-default-rtdb.firebaseio.com",
+    "project_id": "dailyprofitpk-01",
+    "storage_bucket": "dailyprofitpk-01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:471340210455:android:4ecd62fbeb7d34a94c3f52",
+        "android_client_info": {
+          "package_name": "com.dailyprofit.admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "471340210455-jm0892s0grmimkb89dhqu3ltb8vhcef8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJuinfNH_LkDT8LU4p1fLIgXDcQc74P_k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "471340210455-jm0892s0grmimkb89dhqu3ltb8vhcef8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

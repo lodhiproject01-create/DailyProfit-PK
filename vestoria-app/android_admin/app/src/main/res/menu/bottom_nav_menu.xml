@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="Home" />
+    <item
+        android:id="@+id/nav_withdrawals"
+        android:icon="@android:drawable/ic_menu_send"
+        android:title="Withdraws" />
+    <item
+        android:id="@+id/nav_deposits"
+        android:icon="@android:drawable/ic_menu_save"
+        android:title="Deposits" />
+    <item
+        android:id="@+id/nav_ads"
+        android:icon="@android:drawable/ic_menu_slideshow"
+        android:title="Ads Earn" />
+    <item
+        android:id="@+id/nav_users"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="Users" />
+</menu>

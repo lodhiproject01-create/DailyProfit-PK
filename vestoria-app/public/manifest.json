@@ -1,0 +1,16 @@
+{
+  "name": "DailyProfit PK",
+  "short_name": "DPPK",
+  "description": "Daily Earnings Made Simple — Pakistan's premier investment platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F19",
+  "theme_color": "#00FF99",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["finance", "business"],
+  "lang": "en-PK"
+}

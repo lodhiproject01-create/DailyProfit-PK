@@ -1,0 +1,18 @@
+[
+  {
+    "name": "App",
+    "class": "com.getcapacitor.library.app.AppPlugin"
+  },
+  {
+    "name": "Keyboard",
+    "class": "com.getcapacitor.library.keyboard.KeyboardPlugin"
+  },
+  {
+    "name": "Preferences",
+    "class": "com.getcapacitor.library.preferences.PreferencesPlugin"
+  },
+  {
+    "name": "StatusBar",
+    "class": "com.getcapacitor.library.status-bar.StatusBarPlugin"
+  }
+]

@@ -1,0 +1,9 @@
+{
+	"appId": "com.dailyprofit.app",
+	"appName": "DailyProfit PK",
+	"webDir": "out",
+	"server": {
+		"url": "https://dailyprofitpk.vercel.app",
+		"cleartext": true
+	}
+}
