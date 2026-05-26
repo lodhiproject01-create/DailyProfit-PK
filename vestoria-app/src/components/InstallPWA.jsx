@@ -11,10 +11,22 @@ export default function InstallPWA() {
   const [appLink, setAppLink] = useState("");
 
   useEffect(() => {
-    // Check if dismissed
-    const dismissed = sessionStorage.getItem("appPopupDismissed_v3");
+    // Detect if already running in standalone PWA, Capacitor, or Android WebView
+    const isStandalone = 
+      (typeof window !== "undefined" && window.matchMedia('(display-mode: standalone)').matches) 
+      || (typeof navigator !== "undefined" && navigator.standalone)
+      || typeof window.Capacitor !== 'undefined'
+      || /wv|android.*wv/i.test(navigator.userAgent);
+
+    if (isStandalone) {
+      setShowInstall(false);
+      return;
+    }
+
+    // Check if persistently dismissed via localStorage
+    const dismissed = localStorage.getItem("appPopupDismissed_v4");
     
-    // Always show if not dismissed (will fallback to /DailyProfitPK.apk)
+    // Show if not persistently dismissed
     if (!dismissed) {
       setShowInstall(true);
     }
@@ -37,7 +49,7 @@ export default function InstallPWA() {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      if (!dismissed) setShowInstall(true);
+      if (!dismissed && !isStandalone) setShowInstall(true);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -46,7 +58,7 @@ export default function InstallPWA() {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
   }, []);
-
+ 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
@@ -54,18 +66,18 @@ export default function InstallPWA() {
       if (outcome === "accepted") {
         setDeferredPrompt(null);
         setShowInstall(false);
-        sessionStorage.setItem("appPopupDismissed_v3", "true");
+        localStorage.setItem("appPopupDismissed_v4", "true");
       }
     } else {
       alert("To install: Tap the browser menu (⋮) and select 'Add to Home Screen'");
     }
   };
-
+ 
   const handleDismiss = () => {
     setShowInstall(false);
-    sessionStorage.setItem("appPopupDismissed_v3", "true");
+    localStorage.setItem("appPopupDismissed_v4", "true");
   };
-
+ 
   if (!showInstall) return null;
 
   return (
@@ -106,7 +118,7 @@ export default function InstallPWA() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
-                  sessionStorage.setItem("appPopupDismissed_v3", "true");
+                  localStorage.setItem("appPopupDismissed_v4", "true");
                   handleDismiss();
                 }}
                 className="w-full py-3.5 bg-gradient-to-r from-green-500 to-cyan-500 hover:brightness-110 text-gray-900 font-bold rounded-xl flex items-center justify-center gap-2 transition text-center justify-center"
