@@ -11,7 +11,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { userData } = useStore();
   const [telegramLink, setTelegramLink] = useState("");
-  const [features, setFeatures] = useState({ investments: true, deposit: true, withdraw: true, passbook: true, referrals: true, support: true, tasks: true, promos: true, checkin: true, leaderboard: true, kyc: true });
+  const [features, setFeatures] = useState({ investments: true, deposit: true, withdraw: true, passbook: true, referrals: true, support: true, tasks: true, promos: true, checkin: true, leaderboard: true });
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "settings", "general"), (docSnap) => {

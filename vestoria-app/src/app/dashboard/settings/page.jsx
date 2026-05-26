@@ -5,8 +5,8 @@ import { useStore } from "@/store/useStore";
 import { db, auth } from "@/firebase/config";
 import { doc, updateDoc } from "firebase/firestore";
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, signOut } from "firebase/auth";
-import { User, Mail, Phone, Lock, LogOut, Save, Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { ProfileImageUploader, ImageUploader } from "@/components/CloudinaryUploader";
+import { User, Mail, Phone, Lock, LogOut, Save, Eye, EyeOff } from "lucide-react";
+import { ProfileImageUploader } from "@/components/CloudinaryUploader";
 
 export default function Settings() {
   const { userData, user } = useStore();
@@ -18,20 +18,9 @@ export default function Settings() {
   const [showNewPw, setShowNewPw] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingPw, setLoadingPw] = useState(false);
-  const [loadingKyc, setLoadingKyc] = useState(false);
-  const [kycNumber, setKycNumber] = useState("");
-  const [kycImg, setKycImg] = useState("");
-  const [kycCloudinaryData, setKycCloudinaryData] = useState(null);
   const [msg, setMsg] = useState(null);
-  const [features, setFeatures] = useState({ kyc: true });
 
-  useEffect(() => {
-    import("firebase/firestore").then(({ doc, getDoc }) => {
-      getDoc(doc(db, "settings", "general")).then((snap) => {
-        if (snap.exists() && snap.data().features) setFeatures(snap.data().features);
-      });
-    });
-  }, []);
+
 
   useEffect(() => {
     if (userData) {
@@ -96,27 +85,7 @@ export default function Settings() {
     await signOut(auth);
   };
 
-  const handleKycSubmit = async (e) => {
-    e.preventDefault();
-    if (!kycNumber || !kycCloudinaryData) return showMsg("error", "Please provide both ID Number and upload your document screenshot.");
-    setLoadingKyc(true);
-    try {
-      await updateDoc(doc(db, "users", userData.id), {
-        kycStatus: "pending",
-        kycNumber,
-        kycDocument: kycCloudinaryData.image_url,
-        kycDocumentPublicId: kycCloudinaryData.public_id || "",
-        kycDocumentUploadTime: kycCloudinaryData.upload_time || new Date().toISOString()
-      });
-      showMsg("success", "✅ KYC submitted for admin review.");
-      setKycNumber("");
-      setKycCloudinaryData(null);
-    } catch (err) {
-      showMsg("error", "Failed to submit KYC");
-    } finally {
-      setLoadingKyc(false);
-    }
-  };
+
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -147,9 +116,6 @@ export default function Settings() {
           <div>
             <div className="flex items-center gap-2">
               <p className="font-bold text-white text-lg">{userData?.name}</p>
-              {userData?.kycStatus === "verified" && (
-                <ShieldCheck className="w-5 h-5 text-cyan-400" title="Verified Account" />
-              )}
             </div>
             <p className="text-gray-400 text-sm">{userData?.email}</p>
             <p className="text-xs text-gray-500 font-mono mt-1">ID: {userData?.id?.slice(0, 12)}...</p>
@@ -247,68 +213,7 @@ export default function Settings() {
         </form>
       </div>
 
-      {/* KYC Verification */}
-      {features.kyc !== false && (
-        <div className="bg-gray-800 p-6 md:p-8 rounded-3xl border border-gray-700">
-          <div className="flex justify-between items-start mb-6">
-            <h3 className="text-xl font-bold flex items-center gap-2 text-white">
-              <ShieldCheck className={userData?.kycStatus === 'verified' ? 'text-blue-400' : 'text-gray-400'} /> Identity Verification
-            </h3>
-            {userData?.kycStatus === "verified" && (
-              <span className="bg-blue-500/20 text-blue-400 text-xs font-bold px-3 py-1 rounded-full border border-blue-500/30">VERIFIED</span>
-            )}
-            {userData?.kycStatus === "pending" && (
-              <span className="bg-yellow-500/20 text-yellow-400 text-xs font-bold px-3 py-1 rounded-full border border-yellow-500/30">PENDING REVIEW</span>
-            )}
-            {userData?.kycStatus === "rejected" && (
-              <span className="bg-red-500/20 text-red-400 text-xs font-bold px-3 py-1 rounded-full border border-red-500/30">REJECTED</span>
-            )}
-          </div>
 
-          {userData?.kycStatus === "verified" ? (
-            <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl text-blue-400 text-sm">
-              Your identity has been successfully verified by the administration. You have full access to all platform features.
-            </div>
-          ) : userData?.kycStatus === "pending" ? (
-            <div className="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-xl text-yellow-400 text-sm">
-              Your documents are currently under review. This usually takes 24-48 hours.
-            </div>
-          ) : (
-            <form onSubmit={handleKycSubmit} className="space-y-4">
-              <p className="text-sm text-gray-400 mb-4">Upload your CNIC or Passport to verify your account and unlock higher limits.</p>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">CNIC / ID Number</label>
-                <input
-                  type="text"
-                  value={kycNumber}
-                  onChange={(e) => setKycNumber(e.target.value)}
-                  placeholder="e.g. 12345-1234567-1"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 text-white focus:outline-none focus:border-blue-500 transition"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Upload CNIC / Document Image</label>
-                <ImageUploader 
-                  imageType="kyc" 
-                  userId={userData?.id} 
-                  onUploadSuccess={setKycCloudinaryData}
-                  label="CNIC Document Receipt" 
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loadingKyc}
-                className="flex items-center justify-center w-full gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold px-6 py-4 rounded-xl transition mt-2"
-              >
-                {loadingKyc
-                  ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  : "Submit for Verification"}
-              </button>
-            </form>
-          )}
-        </div>
-      )}
 
       {/* Wallet balances display */}
       <div className="bg-gray-800 p-6 rounded-3xl border border-gray-700">

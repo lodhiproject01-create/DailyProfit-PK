@@ -26,8 +26,7 @@ export default function SystemSettings() {
       tasks: true,
       promos: true,
       checkin: true,
-      leaderboard: true,
-      kyc: true
+      leaderboard: true
     }
   });
 
@@ -52,8 +51,7 @@ export default function SystemSettings() {
               tasks: true,
               promos: true,
               checkin: true,
-              leaderboard: true,
-              kyc: true
+              leaderboard: true
             };
           }
           setGeneral(prev => ({ ...prev, ...data }));
@@ -181,8 +179,7 @@ export default function SystemSettings() {
               { key: "tasks", label: "📋 Task Reward Center" },
               { key: "promos", label: "🎁 Promo Codes System" },
               { key: "checkin", label: "📅 Daily Login Rewards" },
-              { key: "leaderboard", label: "🏆 Global Leaderboard" },
-              { key: "kyc", label: "🛡️ KYC Verification Portal" }
+              { key: "leaderboard", label: "🏆 Global Leaderboard" }
             ].map(f => (
               <div key={f.key} className="bg-gray-950 p-3.5 rounded-xl border border-gray-850 flex items-center justify-between">
                 <span className="text-xs font-semibold text-gray-300">{f.label}</span>

@@ -67,7 +67,6 @@ export default function AdminLayout({ children }) {
     { name: "Investment Plans", path: "/admin/plans", icon: Package },
     { name: "Fraud & Risk", path: "/admin/fraud", icon: ShieldAlert },
     { name: "Global Notices", path: "/admin/notices", icon: Bell },
-    { name: "KYC Verification", path: "/admin/kyc", icon: ShieldCheck },
     { name: "Support Tickets", path: "/admin/tickets", icon: MessageSquare },
     { name: "Database Export", path: "/admin/export", icon: Database },
     { name: "Task Center", path: "/admin/tasks", icon: ListTodo },

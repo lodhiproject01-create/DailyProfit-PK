@@ -97,9 +97,36 @@ export async function GET() {
       await setDoc(doc(db, "payment_methods", method.id), method);
     }
 
+    // 4. Seed Default Tasks (Watch & Earn)
+    const tasks = [
+      { id: "task-1", title: "Subscribe to our official YouTube Channel", link: "https://youtube.com", reward: 25, active: true, createdAt: new Date() },
+      { id: "task-2", title: "Join our active Telegram channel", link: "https://telegram.org", reward: 30, active: true, createdAt: new Date() },
+      { id: "task-3", title: "Follow our official Twitter page", link: "https://twitter.com", reward: 20, active: true, createdAt: new Date() }
+    ];
+
+    for (const t of tasks) {
+      await setDoc(doc(db, "tasks", t.id), t);
+    }
+
+    // 5. Seed Default Notices
+    await setDoc(doc(db, "notices", "welcome-notice"), {
+      title: "Welcome to DailyProfit PK! 🚀",
+      message: "Start building consistent daily earnings today. Browse our Premium Investment Plans, complete tasks, and withdraw your profits instantly via EasyPaisa & JazzCash!",
+      type: "success",
+      active: true,
+      timestamp: new Date()
+    });
+
+    // 6. Seed Default Promotional Banner
+    await setDoc(doc(db, "banners", "launch-banner"), {
+      imageUrl: "https://res.cloudinary.com/demo/image/upload/c_fill,w_800,h_300/sample.jpg",
+      targetUrl: "/dashboard/investments",
+      createdAt: new Date()
+    });
+
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "🚀 Firestore database successfully initialized with Dynamic Settings, Premium Investment Plans, and Dynamic Billing Gateways!"
+      message: "🚀 Firestore database successfully initialized with Settings, Plans, Billing Gateways, Default Tasks, Notices, and Promotion Banners!"
     }), {
       status: 200,
       headers: { "Content-Type": "application/json" }

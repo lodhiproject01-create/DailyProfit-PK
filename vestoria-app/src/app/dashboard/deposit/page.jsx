@@ -196,9 +196,6 @@ export default function Deposit() {
       if (totalRecent > 3) {
         riskScore += 10; // slightly higher logic baseline
       }
-      if (userData.kycStatus !== "verified") {
-        riskScore += 15; // unverified accounts get higher risk score
-      }
       if (depAmount > 15000) {
         riskScore += 20; // high amount verification checks
       }
@@ -222,7 +219,6 @@ export default function Deposit() {
         status: "pending",
         riskScore,
         riskLevel,
-        kycStatus: userData.kycStatus || "unverified",
         deviceFingerprint: navigator.userAgent.slice(0, 100),
         timestamp: serverTimestamp()
       });
