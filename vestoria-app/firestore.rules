@@ -28,15 +28,8 @@ service cloud.firestore {
                     
       allow update: if request.auth != null && request.auth.uid == userId
                     && (
-                      // Scenario A: Standard non-role, non-financial updates
-                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(["balance", "profit", "referralEarnings", "role"])
-                      ||
-                      // Scenario B: Whitelisted admin self-promoting or updating role (financial fields still locked)
-                      (
-                        'email' in request.resource.data &&
-                        request.resource.data.email.lower() in ["umarlodhi2020@gmail.com", "umarhayat@gmail.com", "admin@dailyprofit.pk", "lodhiproject02@gmail.com"]
-                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["balance", "profit", "referralEarnings"])
-                      )
+                      // Users can update all standard profile and financial fields (required for client-side investments, deposits, checkins and rewards), but cannot modify their role
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role"])
                     );
       
       // Nested user notifications
