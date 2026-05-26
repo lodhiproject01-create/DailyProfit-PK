@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { db } from "@/firebase/config";
 import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { Image as ImageIcon, Plus, Trash2, Link as LinkIcon, CheckCircle2 } from "lucide-react";
+import { ImageUploader } from "@/components/CloudinaryUploader";
 
 export default function BannersManager() {
   const [banners, setBanners] = useState([]);
@@ -68,16 +69,15 @@ export default function BannersManager() {
           <h3 className="text-lg font-bold text-white mb-4">Add New Banner</h3>
           <form onSubmit={handleAdd} className="space-y-4">
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Image URL (landscape recommended)</label>
-              <input 
-                type="url" 
-                value={form.imageUrl}
-                onChange={e => setForm({...form, imageUrl: e.target.value})}
-                placeholder="https://imgbb.com/..."
-                className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl text-white outline-none focus:border-purple-400"
-                required
+              <label className="text-sm text-gray-400 block mb-2">Upload Banner Image (Landscape aspect ratio)</label>
+              <ImageUploader 
+                imageType="banners" 
+                userId="admin" 
+                onUploadSuccess={(data) => {
+                  setForm({ ...form, imageUrl: data ? data.image_url : "" });
+                }}
+                label="Homepage Banner Image"
               />
-              <p className="text-xs text-gray-500 mt-1">Upload on ImgBB and paste direct link here.</p>
             </div>
             <div>
               <label className="text-sm text-gray-400 block mb-1">Target URL (Optional)</label>

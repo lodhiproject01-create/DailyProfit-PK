@@ -7,6 +7,7 @@ import {
   collection, addDoc, query, where, getDocs, serverTimestamp, doc, getDoc, onSnapshot
 } from "firebase/firestore";
 import { Upload, ArrowRight, ShieldCheck, Copy, Clock, AlertTriangle, CheckCircle, Smartphone } from "lucide-react";
+import { ScreenshotUploadCard } from "@/components/CloudinaryUploader";
 
 export default function Deposit() {
   const { userData } = useStore();
@@ -22,6 +23,7 @@ export default function Deposit() {
   const [cooldown, setCooldown] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [msg, setMsg] = useState(null);
+  const [cloudinaryData, setCloudinaryData] = useState(null);
 
   // Load payment methods dynamically from Firestore
   useEffect(() => {
@@ -182,30 +184,11 @@ export default function Deposit() {
         });
       }
 
-      // Calculate simple upload proof
-      let screenshotUrl = "";
-      if (screenshot) {
-        setUploading(true);
-        const formData = new FormData();
-        formData.append("file", screenshot);
-        formData.append("upload_preset", "dailyprofit_preset");
-        formData.append("cloud_name", "dtuay731d");
-
-        try {
-          const res = await fetch("https://api.cloudinary.com/v1_1/dtuay731d/image/upload", {
-            method: "POST",
-            body: formData
-          });
-          const data = await res.json();
-          screenshotUrl = data.secure_url || "";
-        } catch {
-          setMsg({ type: "error", text: "Proof upload failed. Please try again." });
-          setLoading(false);
-          setUploading(false);
-          return;
-        }
-        setUploading(false);
+      // Calculate secure upload proof from local state
+      if (!cloudinaryData) {
+        return setMsg({ type: "error", text: "⚠️ Please upload a valid payment receipt screenshot first!" });
       }
+      const screenshotUrl = cloudinaryData.image_url;
 
       // Check if this user had recent deposits to adjust risk score
       const recentDepsSnap = await getDocs(query(collection(db, "deposits"), where("userId", "==", userData.id)));
@@ -232,6 +215,10 @@ export default function Deposit() {
         tid,
         method: selectedMethod.name,
         screenshotUrl,
+        public_id: cloudinaryData.public_id || "",
+        upload_time: cloudinaryData.upload_time || new Date().toISOString(),
+        uploaded_by: userData.id,
+        image_type: "deposits",
         status: "pending",
         riskScore,
         riskLevel,
@@ -252,6 +239,7 @@ export default function Deposit() {
       setAmount("");
       setTid("");
       setScreenshot(null);
+      setCloudinaryData(null);
       setCooldown(true);
       setCooldownTime(300); // 5 mins cooldown
 
@@ -417,20 +405,11 @@ export default function Deposit() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Payment Receipt Screenshot</label>
-              <div className="relative border-2 border-dashed border-gray-600 rounded-xl p-6 text-center hover:bg-gray-700 transition cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setScreenshot(e.target.files[0])}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required
-                />
-                <Upload className="w-8 h-8 text-gray-400 mb-2 mx-auto" />
-                <span className="text-sm text-gray-300">
-                  {screenshot ? <span className="text-green-400 font-medium">✓ {screenshot.name}</span> : "Tap to select receipt image"}
-                </span>
-              </div>
+              <ScreenshotUploadCard 
+                onUploadSuccess={setCloudinaryData} 
+                userId={userData.id} 
+                defaultMethod={selectedMethod.name} 
+              />
             </div>
 
             <button

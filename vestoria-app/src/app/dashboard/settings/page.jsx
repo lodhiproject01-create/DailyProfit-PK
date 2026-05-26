@@ -6,6 +6,7 @@ import { db, auth } from "@/firebase/config";
 import { doc, updateDoc } from "firebase/firestore";
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, signOut } from "firebase/auth";
 import { User, Mail, Phone, Lock, LogOut, Save, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { ProfileImageUploader, ImageUploader } from "@/components/CloudinaryUploader";
 
 export default function Settings() {
   const { userData, user } = useStore();
@@ -20,6 +21,7 @@ export default function Settings() {
   const [loadingKyc, setLoadingKyc] = useState(false);
   const [kycNumber, setKycNumber] = useState("");
   const [kycImg, setKycImg] = useState("");
+  const [kycCloudinaryData, setKycCloudinaryData] = useState(null);
   const [msg, setMsg] = useState(null);
   const [features, setFeatures] = useState({ kyc: true });
 
@@ -34,6 +36,20 @@ export default function Settings() {
   const showMsg = (type, text) => {
     setMsg({ type, text });
     setTimeout(() => setMsg(null), 4000);
+  };
+
+  const handleAvatarUpload = async (imgData) => {
+    if (!userData?.id || !imgData) return;
+    try {
+      await updateDoc(doc(db, "users", userData.id), {
+        profileImage: imgData.image_url,
+        profileImagePublicId: imgData.public_id || "",
+        profileImageUploadTime: imgData.upload_time || new Date().toISOString()
+      });
+      showMsg("success", "✅ Profile picture updated!");
+    } catch {
+      showMsg("error", "Failed to update profile picture.");
+    }
   };
 
   const handleProfileSave = async (e) => {
@@ -75,17 +91,19 @@ export default function Settings() {
 
   const handleKycSubmit = async (e) => {
     e.preventDefault();
-    if (!kycNumber || !kycImg) return showMsg("error", "Please provide both ID Number and image link.");
+    if (!kycNumber || !kycCloudinaryData) return showMsg("error", "Please provide both ID Number and upload your document screenshot.");
     setLoadingKyc(true);
     try {
       await updateDoc(doc(db, "users", userData.id), {
         kycStatus: "pending",
         kycNumber,
-        kycDocument: kycImg,
+        kycDocument: kycCloudinaryData.image_url,
+        kycDocumentPublicId: kycCloudinaryData.public_id || "",
+        kycDocumentUploadTime: kycCloudinaryData.upload_time || new Date().toISOString()
       });
       showMsg("success", "✅ KYC submitted for admin review.");
       setKycNumber("");
-      setKycImg("");
+      setKycCloudinaryData(null);
     } catch (err) {
       showMsg("error", "Failed to submit KYC");
     } finally {
@@ -113,15 +131,17 @@ export default function Settings() {
         </h3>
 
         {/* Avatar */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl font-extrabold text-gray-900 shadow-lg">
-            {(name || userData?.name || "U").charAt(0).toUpperCase()}
-          </div>
+        <div className="flex items-center gap-6 mb-6">
+          <ProfileImageUploader 
+            currentUrl={userData?.profileImage || ""} 
+            userId={userData?.id} 
+            onUploadSuccess={handleAvatarUpload} 
+          />
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-bold text-white">{userData?.name}</p>
+              <p className="font-bold text-white text-lg">{userData?.name}</p>
               {userData?.kycStatus === "verified" && (
-                <ShieldCheck className="w-4 h-4 text-blue-500" title="Verified Account" />
+                <ShieldCheck className="w-5 h-5 text-cyan-400" title="Verified Account" />
               )}
             </div>
             <p className="text-gray-400 text-sm">{userData?.email}</p>
@@ -261,16 +281,13 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Document Image Link</label>
-                <input
-                  type="url"
-                  value={kycImg}
-                  onChange={(e) => setKycImg(e.target.value)}
-                  placeholder="Paste imgbb.com link here"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 text-white focus:outline-none focus:border-blue-500 transition"
-                  required
+                <label className="block text-sm font-medium text-gray-300 mb-2">Upload CNIC / Document Image</label>
+                <ImageUploader 
+                  imageType="kyc" 
+                  userId={userData?.id} 
+                  onUploadSuccess={setKycCloudinaryData}
+                  label="CNIC Document Receipt" 
                 />
-                <p className="text-xs text-gray-500 mt-2">Please upload your image to <a href="https://imgbb.com" target="_blank" className="text-blue-400 underline">imgbb.com</a> and paste the link here.</p>
               </div>
               <button
                 type="submit"
