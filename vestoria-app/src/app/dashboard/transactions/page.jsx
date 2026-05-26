@@ -12,6 +12,49 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all, in, out
 
+  const getMs = (timestamp) => {
+    if (!timestamp) return 0;
+    try {
+      if (typeof timestamp === 'object' && timestamp.seconds !== undefined) {
+        return timestamp.seconds * 1000;
+      }
+      if (typeof timestamp.toDate === 'function') {
+        return timestamp.toDate().getTime();
+      }
+      if (timestamp instanceof Date) {
+        return timestamp.getTime();
+      }
+      const parsed = new Date(timestamp).getTime();
+      return isNaN(parsed) ? 0 : parsed;
+    } catch (e) {
+      return 0;
+    }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "Processing...";
+    try {
+      if (typeof timestamp === 'object' && timestamp.seconds !== undefined) {
+        const d = new Date(timestamp.seconds * 1000);
+        if (!isNaN(d.getTime())) return d.toLocaleString();
+      }
+      if (typeof timestamp.toDate === 'function') {
+        const d = timestamp.toDate();
+        if (!isNaN(d.getTime())) return d.toLocaleString();
+      }
+      if (timestamp instanceof Date) {
+        if (!isNaN(timestamp.getTime())) return timestamp.toLocaleString();
+      }
+      const d = new Date(timestamp);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleString();
+      }
+    } catch (e) {
+      console.error("Error formatting timestamp:", e);
+    }
+    return "Processing...";
+  };
+
   useEffect(() => {
     if (!userData?.id) return;
     const fetchTransactions = async () => {
@@ -60,9 +103,9 @@ export default function Transactions() {
           isCredit: false
         }));
 
-        // Combine and Sort
+        // Combine and Sort safely using getMs
         let allTx = [...deposits, ...withdrawals, ...investments];
-        allTx.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        allTx.sort((a, b) => getMs(b.timestamp) - getMs(a.timestamp));
         
         setTransactions(allTx);
       } catch (err) {
@@ -146,7 +189,7 @@ export default function Transactions() {
                   <div>
                     <h3 className="font-bold text-white text-base md:text-lg">{tx.title}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-gray-400">{tx.timestamp ? new Date(tx.timestamp.seconds * 1000).toLocaleString() : "Processing..."}</span>
+                      <span className="text-xs text-gray-400">{formatTimestamp(tx.timestamp)}</span>
                       <span className="text-gray-600">•</span>
                       <span className="text-xs text-gray-400">{tx.method}</span>
                     </div>
