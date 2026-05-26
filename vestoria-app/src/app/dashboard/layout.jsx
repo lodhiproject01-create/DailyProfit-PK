@@ -10,7 +10,7 @@ import BottomNav from "@/components/BottomNav";
 import PageTransition from "@/components/PageTransition";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 import InstallPWA from "@/components/InstallPWA";
-import { Bell, Settings as SettingsIcon } from "lucide-react";
+import { Bell, Settings as SettingsIcon, LogOut } from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardLayout({ children }) {
@@ -127,6 +127,13 @@ export default function DashboardLayout({ children }) {
             <Link href="/dashboard/settings" className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center font-bold cursor-pointer hover:opacity-80 transition">
               {(userData?.name || "U").charAt(0).toUpperCase()}
             </Link>
+            <button 
+              onClick={() => auth.signOut()}
+              className="p-2 bg-red-500/10 text-red-400 rounded-full hover:bg-red-500/20 transition flex items-center justify-center"
+              title="Sign Out"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
