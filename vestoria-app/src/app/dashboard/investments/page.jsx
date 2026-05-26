@@ -43,7 +43,10 @@ export default function Investments() {
       return setMsg({ type: "error", text: "You already have an active investment in this plan." });
     }
 
-    const confirmed = window.confirm(`Invest Rs. ${plan.price} in ${plan.name}?\n\nYou will earn Rs. ${plan.dailyProfit}/day for ${plan.durationDays} days.\nTotal return: Rs. ${plan.dailyProfit * plan.durationDays}`);
+    const dailyProfit = Number(plan.dailyProfit || plan.daily || 0);
+    const durationDays = Number(plan.durationDays || plan.days || 30);
+
+    const confirmed = window.confirm(`Invest Rs. ${plan.price} in ${plan.name}?\n\nYou will earn Rs. ${dailyProfit}/day for ${durationDays} days.\nTotal return: Rs. ${dailyProfit * durationDays}`);
     if (!confirmed) return;
 
     setLoadingId(plan.id);
@@ -55,9 +58,9 @@ export default function Investments() {
         planId: plan.id,
         planName: plan.name,
         amount: plan.price,
-        dailyProfit: plan.dailyProfit,
-        durationDays: plan.durationDays,
-        daysRemaining: plan.durationDays,
+        dailyProfit,
+        durationDays,
+        daysRemaining: durationDays,
         status: "active",
         startedAt: serverTimestamp()
       });
@@ -106,6 +109,8 @@ export default function Investments() {
           const color = plan.color || planColors[i % planColors.length];
           const isActive = myInvestments.some(inv => inv.planId === plan.id && inv.status === "active");
           const canAfford = (userData?.balance || 0) >= plan.price;
+          const dailyProfit = Number(plan.dailyProfit || plan.daily || 0);
+          const durationDays = Number(plan.durationDays || plan.days || 30);
 
           return (
             <div key={plan.id} className="bg-gray-800 rounded-3xl border border-gray-700 overflow-hidden flex flex-col">
@@ -122,15 +127,15 @@ export default function Investments() {
                 <div className="space-y-3 mb-6 flex-1">
                   <div className="flex justify-between bg-gray-900 p-3 rounded-xl border border-gray-700">
                     <span className="text-gray-400 text-sm">Daily Profit</span>
-                    <span className="font-bold text-green-400">Rs. {plan.dailyProfit}</span>
+                    <span className="font-bold text-green-400">Rs. {dailyProfit}</span>
                   </div>
                   <div className="flex justify-between bg-gray-900 p-3 rounded-xl border border-gray-700">
                     <span className="text-gray-400 text-sm">Duration</span>
-                    <span className="font-bold text-white">{plan.durationDays} Days</span>
+                    <span className="font-bold text-white">{durationDays} Days</span>
                   </div>
                   <div className="flex justify-between bg-gray-900 p-3 rounded-xl border border-gray-700">
                     <span className="text-gray-400 text-sm">Total Return</span>
-                    <span className="font-bold text-cyan-400">Rs. {(plan.dailyProfit * plan.durationDays)?.toLocaleString()}</span>
+                    <span className="font-bold text-cyan-400">Rs. {(dailyProfit * durationDays)?.toLocaleString()}</span>
                   </div>
                 </div>
 

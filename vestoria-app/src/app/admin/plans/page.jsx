@@ -11,7 +11,14 @@ export default function PlanManagement() {
 
   // Modal
   const [editingPlan, setEditingPlan] = useState(null);
-  const [form, setForm] = useState({ name: "", price: 0, daily: 0, days: 30, color: "from-green-500 to-cyan-500", popular: false });
+  const [form, setForm] = useState({ 
+    name: "", 
+    price: 0, 
+    dailyProfit: 0, 
+    durationDays: 30, 
+    color: "from-green-500 to-cyan-500", 
+    popular: false 
+  });
 
   useEffect(() => {
     const unSub = onSnapshot(query(collection(db, "plans")), (snap) => {
@@ -27,14 +34,16 @@ export default function PlanManagement() {
       const dataToSave = { 
         name: form.name || "", 
         price: Number(form.price) || 0, 
-        daily: Number(form.daily) || 0, 
-        days: Number(form.days) || 0, 
+        dailyProfit: Number(form.dailyProfit) || 0, 
+        durationDays: Number(form.durationDays) || 0, 
         color: form.color || "from-green-500 to-cyan-500",
         popular: !!form.popular
       };
 
       if (editingPlan === 'new') {
-        await setDoc(doc(collection(db, "plans")), dataToSave);
+        // Generate a clean slug or custom ID based on name to make referencing neat
+        const newRef = doc(collection(db, "plans"));
+        await setDoc(newRef, dataToSave);
       } else {
         await updateDoc(doc(db, "plans", editingPlan.id), dataToSave);
       }
@@ -51,7 +60,7 @@ export default function PlanManagement() {
     }
   };
 
-  if (loading) return <div className="animate-pulse w-full h-96 bg-gray-900 rounded-3xl" />;
+  if (loading) return <div className="animate-pulse w-full h-96 bg-gray-900 rounded-3xl animate-pulse" />;
 
   return (
     <div className="space-y-6">
@@ -61,7 +70,17 @@ export default function PlanManagement() {
           <p className="text-gray-400 text-sm">Create and modify investment packages.</p>
         </div>
         <button 
-          onClick={() => { setEditingPlan('new'); setForm({ name: "", price: 0, daily: 0, days: 30, color: "from-green-500 to-cyan-500", popular: false }); }}
+          onClick={() => { 
+            setEditingPlan('new'); 
+            setForm({ 
+              name: "", 
+              price: 0, 
+              dailyProfit: 0, 
+              durationDays: 30, 
+              color: "from-green-500 to-cyan-500", 
+              popular: false 
+            }); 
+          }}
           className="bg-green-500 text-gray-900 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:brightness-110 transition w-full md:w-auto justify-center"
         >
           <Plus className="w-5 h-5" /> Add New Plan
@@ -85,15 +104,15 @@ export default function PlanManagement() {
               </div>
               <div className="flex justify-between bg-gray-800 p-3 rounded-xl">
                 <span className="text-gray-400 text-sm">Daily Return</span>
-                <span className="text-green-400 font-bold">Rs. {p.daily || 0}</span>
+                <span className="text-green-400 font-bold">Rs. {p.dailyProfit || 0}</span>
               </div>
               <div className="flex justify-between bg-gray-800 p-3 rounded-xl">
                 <span className="text-gray-400 text-sm">Duration</span>
-                <span className="text-white font-bold">{p.days || 0} Days</span>
+                <span className="text-white font-bold">{p.durationDays || 0} Days</span>
               </div>
               <div className="flex justify-between bg-gray-800 p-3 rounded-xl">
                 <span className="text-gray-400 text-sm">Total Profit</span>
-                <span className="text-cyan-400 font-bold">Rs. {Number((p.daily || 0) * (p.days || 0)).toLocaleString()}</span>
+                <span className="text-cyan-400 font-bold">Rs. {Number((p.dailyProfit || 0) * (p.durationDays || 0)).toLocaleString()}</span>
               </div>
             </div>
 
@@ -104,8 +123,8 @@ export default function PlanManagement() {
                   setForm({
                     name: p.name || "",
                     price: p.price || 0,
-                    daily: p.daily || 0,
-                    days: p.days || 30,
+                    dailyProfit: p.dailyProfit || 0,
+                    durationDays: p.durationDays || 30,
                     color: p.color || "from-green-500 to-cyan-500",
                     popular: !!p.popular
                   }); 
@@ -129,30 +148,30 @@ export default function PlanManagement() {
       {editingPlan && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 p-6 md:p-8 rounded-3xl w-full max-w-md shadow-2xl">
-            <h3 className="text-xl font-bold mb-6">{editingPlan === 'new' ? 'Create New Plan' : 'Edit Plan'}</h3>
+            <h3 className="text-xl font-bold mb-6 text-white">{editingPlan === 'new' ? 'Create New Plan' : 'Edit Plan'}</h3>
             <form onSubmit={savePlan} className="space-y-4">
               <div>
                 <label className="text-sm text-gray-400 block mb-1">Plan Name</label>
-                <input type="text" placeholder="e.g. Starter" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700" required />
+                <input type="text" placeholder="e.g. Starter" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700 text-white" required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-400 block mb-1">Price (Rs)</label>
-                  <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700" required />
+                  <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700 text-white" required />
                 </div>
                 <div>
                   <label className="text-sm text-gray-400 block mb-1">Daily Profit (Rs)</label>
-                  <input type="number" value={form.daily} onChange={e => setForm({...form, daily: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700" required />
+                  <input type="number" value={form.dailyProfit} onChange={e => setForm({...form, dailyProfit: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700 text-white" required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-400 block mb-1">Duration (Days)</label>
-                  <input type="number" value={form.days} onChange={e => setForm({...form, days: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700" required />
+                  <input type="number" value={form.durationDays} onChange={e => setForm({...form, durationDays: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700 text-white" required />
                 </div>
                 <div>
                   <label className="text-sm text-gray-400 block mb-1">CSS Color</label>
-                  <input type="text" placeholder="from-X to-Y" value={form.color} onChange={e => setForm({...form, color: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700" required />
+                  <input type="text" placeholder="from-X to-Y" value={form.color} onChange={e => setForm({...form, color: e.target.value})} className="w-full bg-gray-800 p-3 rounded-xl outline-none focus:border-green-500 border border-gray-700 text-white" required />
                 </div>
               </div>
               <label className="flex items-center gap-2 cursor-pointer mt-2 p-3 bg-gray-800 rounded-xl border border-gray-700">
@@ -161,7 +180,7 @@ export default function PlanManagement() {
               </label>
               
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setEditingPlan(null)} className="flex-1 bg-gray-800 py-3 rounded-xl font-bold hover:bg-gray-700">Cancel</button>
+                <button type="button" onClick={() => setEditingPlan(null)} className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold hover:bg-gray-700">Cancel</button>
                 <button type="submit" className="flex-1 bg-green-500 text-gray-900 py-3 rounded-xl font-bold hover:brightness-110">Save Plan</button>
               </div>
             </form>
