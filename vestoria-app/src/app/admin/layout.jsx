@@ -31,7 +31,9 @@ export default function AdminLayout({ children }) {
         
         if (userSnap.exists() && ["admin", "superadmin", "manager"].includes(userSnap.data().role)) {
           setIsAdmin(true);
-          setAdminData(userSnap.data());
+          const data = userSnap.data();
+          setAdminData(data);
+          localStorage.setItem(`dppk_user_role_${u.uid}`, data.role || "admin");
         } else {
           alert("Unauthorized access. Admin only.");
           router.push("/login");

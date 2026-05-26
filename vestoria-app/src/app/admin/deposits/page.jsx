@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { db } from "@/firebase/config";
 import {
-  collection, query, onSnapshot, doc, updateDoc, getDoc, deleteDoc, addDoc, serverTimestamp
+  collection, query, onSnapshot, doc, updateDoc, getDoc, deleteDoc, addDoc, serverTimestamp, orderBy, limit
 } from "firebase/firestore";
 import {
   Search, CheckCircle, XCircle, AlertTriangle, Image as ImageIcon, ShieldAlert,
@@ -22,7 +22,16 @@ export default function DepositManagement() {
   const [submittingNotes, setSubmittingNotes] = useState(false);
 
   useEffect(() => {
-    const unSub = onSnapshot(query(collection(db, "deposits")), (snap) => {
+    const term = search.trim();
+    let fallbackUnsub = null;
+
+    const q = query(
+      collection(db, "deposits"),
+      orderBy("timestamp", "desc"),
+      limit(term ? 300 : 150)
+    );
+
+    const unSub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       
       // Calculate duplicate TxIDs on the fly
@@ -30,11 +39,32 @@ export default function DepositManagement() {
       data.forEach(d => { if (d.tid) tidCounts[d.tid] = (tidCounts[d.tid] || 0) + 1; });
       data.forEach(d => { d.isDuplicateTid = d.tid && tidCounts[d.tid] > 1; });
       
-      setDeposits(data.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0)));
+      setDeposits(data);
       setLoading(false);
+    }, (err) => {
+      console.warn("Deposits index query failed, using fallback:", err);
+      const fallbackQuery = query(collection(db, "deposits"), limit(150));
+      fallbackUnsub = onSnapshot(fallbackQuery, (fallbackSnap) => {
+        const data = fallbackSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const sortedData = data.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
+        
+        const tidCounts = {};
+        sortedData.forEach(d => { if (d.tid) tidCounts[d.tid] = (tidCounts[d.tid] || 0) + 1; });
+        sortedData.forEach(d => { d.isDuplicateTid = d.tid && tidCounts[d.tid] > 1; });
+        
+        setDeposits(sortedData);
+        setLoading(false);
+      }, (fallbackErr) => {
+        console.error("Fallback deposits query failed:", fallbackErr);
+        setLoading(false);
+      });
     });
-    return () => unSub();
-  }, []);
+
+    return () => {
+      unSub();
+      if (fallbackUnsub) fallbackUnsub();
+    };
+  }, [search]);
 
   const showMsg = (txt) => {
     alert(txt);

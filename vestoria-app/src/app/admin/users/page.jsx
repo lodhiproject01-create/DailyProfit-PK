@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/store/useStore";
 import { db } from "@/firebase/config";
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, orderBy, limit } from "firebase/firestore";
 import { Search, UserCog, Ban, Trash2, CheckCircle } from "lucide-react";
 
 export default function UserManagement() {
@@ -20,12 +20,37 @@ export default function UserManagement() {
   const [editProfit, setEditProfit] = useState("");
 
   useEffect(() => {
-    const unSub = onSnapshot(query(collection(db, "users")), (snap) => {
+    const term = search.trim();
+    let fallbackUnsub = null;
+
+    // 1. Fetch recent 150 users by default. If searching, fetch recent 300 to filter client-side.
+    const q = query(
+      collection(db, "users"),
+      orderBy("createdAt", "desc"),
+      limit(term ? 300 : 150)
+    );
+
+    const unSub = onSnapshot(q, (snap) => {
       setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
+    }, (err) => {
+      console.warn("Index not found or sorting failed, falling back to unordered limit query:", err);
+      // Fallback query (requires zero indexes)
+      const fallbackQuery = query(collection(db, "users"), limit(150));
+      fallbackUnsub = onSnapshot(fallbackQuery, (fallbackSnap) => {
+        setUsers(fallbackSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      }, (fallbackErr) => {
+        console.error("Fallback query failed:", fallbackErr);
+        setLoading(false);
+      });
     });
-    return () => unSub();
-  }, []);
+
+    return () => {
+      unSub();
+      if (fallbackUnsub) fallbackUnsub();
+    };
+  }, [search]);
 
   const saveUserBalance = async (e) => {
     e.preventDefault();

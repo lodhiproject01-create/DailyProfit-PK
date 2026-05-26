@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/firebase/config";
-import { collection, query, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, updateDoc, getDoc, orderBy, limit } from "firebase/firestore";
 import { Search, CheckCircle, XCircle } from "lucide-react";
 
 export default function WithdrawalManagement() {
@@ -11,13 +11,38 @@ export default function WithdrawalManagement() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unSub = onSnapshot(query(collection(db, "withdrawals")), (snap) => {
+    const term = search.trim();
+    let fallbackUnsub = null;
+
+    const q = query(
+      collection(db, "withdrawals"),
+      orderBy("timestamp", "desc"),
+      limit(term ? 300 : 150)
+    );
+
+    const unSub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setWithdrawals(data.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0)));
+      setWithdrawals(data);
       setLoading(false);
+    }, (err) => {
+      console.warn("Withdrawals index query failed, using fallback:", err);
+      const fallbackQuery = query(collection(db, "withdrawals"), limit(150));
+      fallbackUnsub = onSnapshot(fallbackQuery, (fallbackSnap) => {
+        const data = fallbackSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const sortedData = data.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
+        setWithdrawals(sortedData);
+        setLoading(false);
+      }, (fallbackErr) => {
+        console.error("Fallback withdrawals query failed:", fallbackErr);
+        setLoading(false);
+      });
     });
-    return () => unSub();
-  }, []);
+
+    return () => {
+      unSub();
+      if (fallbackUnsub) fallbackUnsub();
+    };
+  }, [search]);
 
   const handleApprove = async (wid) => {
     if(!window.confirm(`Mark Rs. ${wid.amount} for ${wid.email} as PAID?`)) return;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/firebase/config";
-import { collection, query, onSnapshot, where, getDocs } from "firebase/firestore";
+import { collection, query, onSnapshot, where, getDocs, orderBy, limit, getCountFromServer } from "firebase/firestore";
 import dynamic from "next/dynamic";
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
@@ -21,48 +21,156 @@ export default function AdminOverview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Fetch Users
-    const unSubUsers = onSnapshot(collection(db, "users"), (snap) => {
-      setStats(s => ({ ...s, users: snap.size }));
+    let active = true;
+
+    // Track initial loads of all 4 statistical sources
+    let usersLoaded = false;
+    let investmentsLoaded = false;
+    let depositsLoaded = false;
+    let withdrawalsLoaded = false;
+
+    const checkLoadingFinished = () => {
+      if (usersLoaded && investmentsLoaded && depositsLoaded && withdrawalsLoaded) {
+        if (active) setLoading(false);
+      }
+    };
+
+    const qUsers = query(collection(db, "users"));
+    const unSubUsers = onSnapshot(qUsers, (snap) => {
+      setStats(prev => ({ ...prev, users: snap.size }));
+      usersLoaded = true;
+      checkLoadingFinished();
+    }, (err) => {
+      console.error("Error loading users stats:", err);
+      usersLoaded = true;
+      checkLoadingFinished();
     });
 
-    // 2. Fetch Deposits
-    const unSubDeps = onSnapshot(collection(db, "deposits"), (snap) => {
-      const deps = snap.docs.map(d => d.data());
-      const total = deps.filter(d => d.status === "approved").reduce((sum, d) => sum + d.amount, 0);
-      setStats(s => ({ ...s, deposits: total }));
-      
-      // Build activity feed
-      const recentDeps = deps.map(d => ({ type: "deposit", ...d })).sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0)).slice(0, 5);
-      
-      // Chart Data Building (last 7 items for simplicity)
-      const labels = deps.slice(0, 7).map((_, i) => `D-${i+1}`);
-      const depData = deps.slice(0, 7).map(d => d.amount);
-      setChartData(prev => ({ ...prev, labels, deposits: depData }));
-      
-      updateActivities("deposit", recentDeps);
+    const qInvestments = query(collection(db, "investments"), where("status", "==", "active"));
+    const unSubInvestments = onSnapshot(qInvestments, (snap) => {
+      setStats(prev => ({ ...prev, activeInv: snap.size }));
+      investmentsLoaded = true;
+      checkLoadingFinished();
+    }, (err) => {
+      console.error("Error loading active investments stats:", err);
+      investmentsLoaded = true;
+      checkLoadingFinished();
     });
 
-    // 3. Fetch Withdrawals
-    const unSubWids = onSnapshot(collection(db, "withdrawals"), (snap) => {
-      const wids = snap.docs.map(d => d.data());
-      const total = wids.filter(d => d.status === "approved").reduce((sum, d) => sum + d.amount, 0);
-      setStats(s => ({ ...s, withdrawals: total }));
-      
-      const recentWids = wids.map(w => ({ type: "withdrawal", ...w })).sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0)).slice(0, 5);
-      const widData = wids.slice(0, 7).map(w => w.amount);
-      setChartData(prev => ({ ...prev, withdrawals: widData }));
-      
-      updateActivities("withdrawal", recentWids);
+    const qDeposits = query(collection(db, "deposits"), where("status", "==", "approved"));
+    const unSubDeposits = onSnapshot(qDeposits, (snap) => {
+      const docs = snap.docs.map(d => d.data());
+      const total = docs.reduce((sum, d) => sum + (d.amount || 0), 0);
+      setStats(prev => ({ ...prev, deposits: total }));
+
+      // Calculate 7-day chart deposits
+      const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const last7Days = [];
+      const dailyDeps = [0, 0, 0, 0, 0, 0, 0];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        last7Days.push({
+          name: weekdays[d.getDay()],
+          dateStr: d.toDateString()
+        });
+      }
+
+      docs.forEach(data => {
+        if (data.timestamp) {
+          const date = data.timestamp.seconds ? new Date(data.timestamp.seconds * 1000) : new Date(data.timestamp);
+          const dateStr = date.toDateString();
+          const index = last7Days.findIndex(day => day.dateStr === dateStr);
+          if (index !== -1) {
+            dailyDeps[index] += (data.amount || 0);
+          }
+        }
+      });
+
+      setChartData(prev => ({
+        ...prev,
+        labels: last7Days.map(day => day.name),
+        deposits: dailyDeps
+      }));
+
+      depositsLoaded = true;
+      checkLoadingFinished();
+    }, (err) => {
+      console.error("Error loading approved deposits stats:", err);
+      depositsLoaded = true;
+      checkLoadingFinished();
     });
 
-    // 4. Fetch Active Investments
-    const unSubInv = onSnapshot(query(collection(db, "investments"), where("status", "==", "active")), (snap) => {
-      setStats(s => ({ ...s, activeInv: snap.size }));
-      setLoading(false);
+    const qWithdrawals = query(collection(db, "withdrawals"), where("status", "==", "approved"));
+    const unSubWithdrawals = onSnapshot(qWithdrawals, (snap) => {
+      const docs = snap.docs.map(d => d.data());
+      const total = docs.reduce((sum, d) => sum + (d.amount || 0), 0);
+      setStats(prev => ({ ...prev, withdrawals: total }));
+
+      // Calculate 7-day chart withdrawals
+      const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const last7Days = [];
+      const dailyWids = [0, 0, 0, 0, 0, 0, 0];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        last7Days.push({
+          name: weekdays[d.getDay()],
+          dateStr: d.toDateString()
+        });
+      }
+
+      docs.forEach(data => {
+        if (data.timestamp) {
+          const date = data.timestamp.seconds ? new Date(data.timestamp.seconds * 1000) : new Date(data.timestamp);
+          const dateStr = date.toDateString();
+          const index = last7Days.findIndex(day => day.dateStr === dateStr);
+          if (index !== -1) {
+            dailyWids[index] += (data.amount || 0);
+          }
+        }
+      });
+
+      setChartData(prev => ({
+        ...prev,
+        labels: last7Days.map(day => day.name),
+        withdrawals: dailyWids
+      }));
+
+      withdrawalsLoaded = true;
+      checkLoadingFinished();
+    }, (err) => {
+      console.error("Error loading approved withdrawals stats:", err);
+      withdrawalsLoaded = true;
+      checkLoadingFinished();
     });
 
-    return () => { unSubUsers(); unSubDeps(); unSubWids(); unSubInv(); };
+    // 4. Limited, ordered real-time feeds (5 items max instead of the whole history)
+    const unSubDepsFeed = onSnapshot(query(collection(db, "deposits"), orderBy("timestamp", "desc"), limit(5)), (snap) => {
+      const deps = snap.docs.map(d => ({ id: d.id, type: "deposit", ...d.data() }));
+      updateActivities("deposit", deps);
+    }, (err) => {
+      console.error("Error loading deposits feed:", err);
+    });
+
+    const unSubWidsFeed = onSnapshot(query(collection(db, "withdrawals"), orderBy("timestamp", "desc"), limit(5)), (snap) => {
+      const wids = snap.docs.map(d => ({ id: d.id, type: "withdrawal", ...d.data() }));
+      updateActivities("withdrawal", wids);
+    }, (err) => {
+      console.error("Error loading withdrawals feed:", err);
+    });
+
+    return () => {
+      active = false;
+      unSubUsers();
+      unSubInvestments();
+      unSubDeposits();
+      unSubWithdrawals();
+      unSubDepsFeed();
+      unSubWidsFeed();
+    };
   }, []);
 
   const updateActivities = (type, data) => {

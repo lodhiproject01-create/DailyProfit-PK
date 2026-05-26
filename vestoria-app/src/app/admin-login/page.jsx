@@ -19,7 +19,8 @@ export default function AdminLogin() {
     const defaultEmails = [
       "umarlodhi2020@gmail.com",
       "umarhayat@gmail.com",
-      "admin@dailyprofit.pk"
+      "admin@dailyprofit.pk",
+      "lodhiproject02@gmail.com"
     ];
     return Array.from(new Set([...envEmails, ...defaultEmails]));
   };

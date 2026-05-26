@@ -17,6 +17,12 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        CookieManager.getInstance().flush();
+    }
+
+    @Override
     public void onStart() {
         super.onStart();
         
@@ -38,9 +44,14 @@ public class MainActivity extends BridgeActivity {
             // Fix for Firebase Auth redirects/popups in some cases
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
             
-            // Enable Third Party Cookies (Often needed for Auth)
+            // Enable Cookies and Persistence
             CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.setAcceptCookie(true);
             cookieManager.setAcceptThirdPartyCookies(webView, true);
+
+            // Enable password and form data saving
+            settings.setSavePassword(true);
+            settings.setSaveFormData(true);
 
             // Custom UserAgent
             settings.setUserAgentString(settings.getUserAgentString() + " DailyProfitApp/1.0");

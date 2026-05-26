@@ -23,10 +23,54 @@ function LoginForm() {
   const [phone, setPhone] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [msg, setMsg] = useState(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const refCode = searchParams.get("ref") || "";
+
+  // Auto-login redirect if already logged in
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const cachedRole = localStorage.getItem(`dppk_user_role_${user.uid}`);
+        if (cachedRole) {
+          if (["admin", "superadmin", "manager"].includes(cachedRole)) {
+            router.replace("/admin");
+          } else {
+            router.replace("/dashboard");
+          }
+        } else {
+          try {
+            const userSnap = await getDoc(doc(db, "users", user.uid));
+            if (userSnap.exists()) {
+              const role = userSnap.data().role || "user";
+              localStorage.setItem(`dppk_user_role_${user.uid}`, role);
+              if (["admin", "superadmin", "manager"].includes(role)) {
+                router.replace("/admin");
+                return;
+              }
+            }
+            router.replace("/dashboard");
+          } catch (err) {
+            console.error("Auth redirect error:", err);
+            router.replace("/dashboard");
+          }
+        }
+      } else {
+        setCheckingAuth(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  if (checkingAuth) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#0B0F19]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-cyan-400"></div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,7 +81,9 @@ function LoginForm() {
         const cred = await signInWithEmailAndPassword(auth, email, password);
         // Check role in Firestore
         const userSnap = await getDoc(doc(db, "users", cred.user.uid));
-        if (userSnap.exists() && userSnap.data().role === "admin") {
+        const role = userSnap.exists() ? (userSnap.data().role || "user") : "user";
+        localStorage.setItem(`dppk_user_role_${cred.user.uid}`, role);
+        if (["admin", "superadmin", "manager"].includes(role)) {
           router.push("/admin");
         } else {
           router.push("/dashboard");
@@ -60,6 +106,7 @@ function LoginForm() {
         };
 
         await setDoc(doc(db, "users", uid), userData);
+        localStorage.setItem(`dppk_user_role_${uid}`, "user");
 
         // If referred, credit 10% of future deposit — just log referral relationship
         // Referral earnings will be handled when admin approves deposit

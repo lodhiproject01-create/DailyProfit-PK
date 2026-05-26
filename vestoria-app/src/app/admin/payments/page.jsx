@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { db } from "@/firebase/config";
 import {
-  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, addDoc, serverTimestamp
+  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, addDoc, serverTimestamp, orderBy, limit, getCountFromServer
 } from "firebase/firestore";
 import {
   Plus, Edit, Trash2, CheckCircle2, XCircle, Sliders, AlertTriangle, ShieldAlert,
@@ -79,26 +79,39 @@ export default function PaymentSettings() {
       }
     });
 
-    // 3. Listen to Fraud logs
-    const unsubFraud = onSnapshot(collection(db, "fraud_logs"), (snap) => {
+    // 3. Listen to Fraud logs (highly limited to 50 logs max instead of downloading thousands)
+    const qFraud = query(collection(db, "fraud_logs"), orderBy("timestamp", "desc"), limit(50));
+    const unsubFraud = onSnapshot(qFraud, (snap) => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setFraudLogs(list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+      setFraudLogs(list);
+    }, (err) => {
+      console.warn("Fraud logs index failed, using fallback:", err);
+      const fallbackUnsub = onSnapshot(query(collection(db, "fraud_logs"), limit(50)), (fallbackSnap) => {
+        const list = fallbackSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setFraudLogs(list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+      });
+      return () => fallbackUnsub();
     });
 
-    // 4. Calculate analytics on fly
-    const unsubDeps = onSnapshot(collection(db, "deposits"), (snapDeps) => {
-      const deps = snapDeps.docs.map(d => d.data());
-      const approvedDeps = deps.filter(d => d.status === "approved").reduce((sum, d) => sum + (d.amount || 0), 0);
-      const pendingDeps = deps.filter(d => d.status === "pending").length;
+    // 4. Calculate analytics on fly via optimized one-off counts and query
+    const loadAnalytics = async () => {
+      try {
+        const pendingDepsSnap = await getCountFromServer(query(collection(db, "deposits"), where("status", "==", "pending")));
+        const pendingWidsSnap = await getCountFromServer(query(collection(db, "withdrawals"), where("status", "==", "pending")));
+        const totalFraudSnap = await getCountFromServer(collection(db, "fraud_logs"));
 
-      getDocs(collection(db, "withdrawals")).then((snapWids) => {
-        const wids = snapWids.docs.map(w => w.data());
-        const approvedWids = wids.filter(w => w.status === "approved").reduce((sum, w) => sum + (w.amount || 0), 0);
-        const pendingWids = wids.filter(w => w.status === "pending").length;
+        const approvedDepsSnap = await getDocs(query(collection(db, "deposits"), where("status", "==", "approved")));
+        const approvedWidsSnap = await getDocs(query(collection(db, "withdrawals"), where("status", "==", "approved")));
 
-        // Determine popular method
+        const totalDeps = approvedDepsSnap.docs.reduce((sum, d) => sum + (d.data().amount || 0), 0);
+        const totalWids = approvedWidsSnap.docs.reduce((sum, w) => sum + (w.data().amount || 0), 0);
+
         const counts = {};
-        deps.forEach(d => { if (d.method) counts[d.method] = (counts[d.method] || 0) + 1; });
+        approvedDepsSnap.docs.forEach(d => {
+          const method = d.data().method;
+          if (method) counts[method] = (counts[method] || 0) + 1;
+        });
+
         let popular = "EasyPaisa";
         let maxCount = 0;
         Object.keys(counts).forEach(k => {
@@ -109,22 +122,25 @@ export default function PaymentSettings() {
         });
 
         setAnalytics({
-          totalDeposits: approvedDeps,
-          totalWithdrawals: approvedWids,
-          pendingDeposits: pendingDeps,
-          pendingWithdrawals: pendingWids,
-          fraudAttempts: snapDeps.docs.filter(d => d.data().riskScore >= 70).length,
+          totalDeposits: totalDeps,
+          totalWithdrawals: totalWids,
+          pendingDeposits: pendingDepsSnap.data().count,
+          pendingWithdrawals: pendingWidsSnap.data().count,
+          fraudAttempts: totalFraudSnap.data().count,
           popularMethod: popular
         });
-      });
-    });
+      } catch (err) {
+        console.error("Error computing payment analytics:", err);
+      }
+    };
+
+    loadAnalytics();
 
     return () => {
       unsubMethods();
       unsubFraud();
-      unsubDeps();
     };
-  }, []);
+  }, [activeTab]);
 
   const showMsg = (type, text) => {
     setMsg({ type, text });

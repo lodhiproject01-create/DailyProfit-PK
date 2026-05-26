@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/firebase/config";
-import { collection, getDocs, doc, writeBatch, serverTimestamp, onSnapshot, query, orderBy, limit, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, writeBatch, serverTimestamp, onSnapshot, query, orderBy, limit, deleteDoc, getCountFromServer } from "firebase/firestore";
 import { Megaphone, Send, Trash2, Users, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 
 export default function BroadcastPage() {
@@ -13,12 +13,18 @@ export default function BroadcastPage() {
   const [userCount, setUserCount] = useState(0);
 
   useEffect(() => {
-    // Live user count
-    const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
-      setUserCount(snap.size);
-    });
+    // 1. Fast live user count via server aggregation
+    const loadUserCount = async () => {
+      try {
+        const snap = await getCountFromServer(collection(db, "users"));
+        setUserCount(snap.data().count);
+      } catch (err) {
+        console.error("Error loading broadcast user count:", err);
+      }
+    };
+    loadUserCount();
 
-    // Broadcast history
+    // 2. Broadcast history
     const unsubHistory = onSnapshot(
       query(collection(db, "broadcasts"), orderBy("sentAt", "desc"), limit(10)),
       (snap) => {
@@ -26,7 +32,7 @@ export default function BroadcastPage() {
       }
     );
 
-    return () => { unsubUsers(); unsubHistory(); };
+    return () => { unsubHistory(); };
   }, []);
 
   const handleSend = async (e) => {

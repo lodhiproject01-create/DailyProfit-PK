@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/firebase/config";
-import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, limit } from "firebase/firestore";
 import { MessageSquare, CheckCircle, Clock, X, Send } from "lucide-react";
 
 export default function SupportTickets() {
@@ -12,7 +12,7 @@ export default function SupportTickets() {
   const [replyText, setReplyText] = useState("");
 
   useEffect(() => {
-    const unSub = onSnapshot(query(collection(db, "tickets")), (snap) => {
+    const unSub = onSnapshot(query(collection(db, "tickets"), limit(100)), (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       data.sort((a, b) => {
         if (a.status === 'open' && b.status !== 'open') return -1;

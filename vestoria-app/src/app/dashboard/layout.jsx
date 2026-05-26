@@ -59,7 +59,9 @@ export default function DashboardLayout({ children }) {
         // Listen to User Data
         const unsubscribeDoc = onSnapshot(doc(db, "users", targetId), (docSnap) => {
           if (docSnap.exists()) {
-            setUserData({ id: targetId, ...docSnap.data() });
+            const data = docSnap.data();
+            setUserData({ id: targetId, ...data });
+            localStorage.setItem(`dppk_user_role_${targetId}`, data.role || "user");
           }
           setLoading(false);
         });
